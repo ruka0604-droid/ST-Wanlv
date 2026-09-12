@@ -1,0 +1,17 @@
+{
+  "display_name": "万缕 · Long Memory",
+  "loading_order": 1000,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "阿岚 / 万缕",
+  "version": "0.8.0",
+  "homePage": "https://github.com/",
+  "auto_update": false,
+  "hooks": {
+    "activate": "init",
+    "deactivate": "onDisable"
+  },
+  "generate_interceptor": "Wanlv_generateInterceptor"
+}
