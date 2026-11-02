@@ -1,4 +1,4 @@
-# 万缕 · Long Memory V0.8
+# 万缕 · Long Memory V0.8.2 · Oil UI
 
 独立的 SillyTavern 前端长期记忆 / 状态 / 关系 / 故事事件扩展。
 
