@@ -6,8 +6,8 @@
   "js": "index.js",
   "css": "style.css",
   "author": "阿岚 / 万缕",
-  "version": "0.8.0",
-  "homePage": "https://github.com/",
+  "version": "0.8.2",
+  "homePage": "https://github.com/ruka0604-droid/ST-Wanlv",
   "auto_update": false,
   "hooks": {
     "activate": "init",

@@ -1,9 +1,9 @@
-export async function callCurrentSTModel(context, prompt) {
-  if (typeof context.generateRaw !== 'function') throw new Error('当前 SillyTavern 未提供 generateRaw API');
-  const result = await context.generateRaw({ prompt });
-  return typeof result === 'string' ? result : (result?.content ?? result?.text ?? JSON.stringify(result));
-}
-
-export async function callMemoryAI(context, prompt) {
-  return callCurrentSTModel(context, prompt);
-}
+let appProvider=null;
+export function setMemoryAIProvider(provider){appProvider=provider;}
+export function normalizeApiUrl(url){const u=new URL(String(url||'').trim());if(u.protocol!=='https:' && !(u.protocol==='http:' && ['localhost','127.0.0.1'].includes(u.hostname)))throw new Error('独立 API 必须使用 HTTPS（本机地址除外）');return u.href.replace(/\/$/,'');}
+function endpoint(base,suffix){const b=normalizeApiUrl(base);return b.endsWith('/chat/completions')?b.replace(/chat\/completions$/,suffix):b.endsWith('/models')?b.replace(/models$/,suffix):b+(b.endsWith('/v1')?'':'/v1')+'/'+suffix;}
+async function request(url,key,options={}){let res;try{res=await fetch(url,{...options,headers:{Authorization:'Bearer '+key,...options.headers}});}catch(e){throw new Error('网络请求失败，可能是跨域 CORS、网络或 URL 问题：'+e.message);}const body=await res.text();let data;try{data=JSON.parse(body);}catch{throw new Error('API 返回非 JSON 内容，请检查 URL 是否为 OpenAI 兼容接口');}if(!res.ok)throw new Error('API HTTP '+res.status+'：'+String(data?.error?.message||data?.message||'请求失败').slice(0,180));return data;}
+export async function listMemoryModels(url,key){const data=await request(endpoint(url,'models'),key);if(!Array.isArray(data.data))throw new Error('模型列表格式不正确');return data.data.map(x=>x.id).filter(x=>typeof x==='string').sort();}
+export async function callIndependentModel(url,key,model,prompt){if(!model)throw new Error('请先选择并保存模型');const data=await request(endpoint(url,'chat/completions'),key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,messages:[{role:'user',content:prompt}],stream:false})});const output=data?.choices?.[0]?.message?.content;if(typeof output!=='string')throw new Error('模型没有返回文本内容');return output;}
+export async function callCurrentSTModel(context,prompt){if(typeof context?.generateRaw!=='function')throw new Error('当前 SillyTavern 未提供 generateRaw API');const result=await context.generateRaw({prompt});return typeof result==='string'?result:(result?.content??result?.text??JSON.stringify(result));}
+export async function callMemoryAI(context,prompt){if(appProvider?.settings?.apiMode==='custom'){const s=appProvider.settings;const key=appProvider.apiKey;if(!key)throw new Error('独立 API 密钥未设置，请在万缕 API 设置中输入');return callIndependentModel(s.apiUrl,key,s.apiModel,prompt);}return callCurrentSTModel(context,prompt);}
