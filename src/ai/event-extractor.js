@@ -1,0 +1,6 @@
+import { callMemoryAI } from './api-client.js';
+import { EVENT_TYPES } from '../events/event-manager.js';
+export async function extractEvents(context,recent,meta={}){
+ const prompt=`你是长篇角色扮演的事件整理器。只从聊天正文提取已经发生的独立事件，不写小说。返回严格 JSON 数组。字段：type(${EVENT_TYPES.join('|')}), summary, participants(array), importance(0-1), floorIndexes(array), consequences(array), stateChanges(array), relationshipChanges(array)。规则：1.只记录正文能证明的事实；2.连续的一段行为归为一个事件；3.第二次/第三次/第N次事件必须作为新的独立事件；4.participants必须列出实际参与者，用户使用“用户”，当前角色使用“${meta.characterName||'当前角色'}”，NPC使用其姓名；5.成人亲密/性事件可用 intimacy 或 sexual_event，但只记录非露骨的事件事实，不输出色情细节；6.未发生的计划、想法不能当成事件；7.floorIndexes必须对应输入中的楼层索引。\n聊天：\n${recent}`;
+ const raw=await callMemoryAI(context,prompt);const text=String(raw||'').replace(/^```json\s*/,'').replace(/```$/,'').trim();let data;try{data=JSON.parse(text);}catch{throw new Error('AI没有返回有效事件JSON');}if(!Array.isArray(data))return[];return data.filter(x=>x&&x.summary).map(x=>({...x,type:EVENT_TYPES.includes(x.type)?x.type:'custom',participants:Array.isArray(x.participants)?x.participants:[],floorIndexes:Array.isArray(x.floorIndexes)?x.floorIndexes:[],consequences:Array.isArray(x.consequences)?x.consequences:[],stateChanges:Array.isArray(x.stateChanges)?x.stateChanges:[],relationshipChanges:Array.isArray(x.relationshipChanges)?x.relationshipChanges:[]}));
+}
