@@ -52,7 +52,7 @@ export class WanlvApp{
   const chat=this.context?.chat;
   if(!Array.isArray(chat)||!chat.length)return {ok:false,reason:'empty_chat'};
   const oldN=this.settings.taskRecentMessages;
-  const rangeN=range==='all'?chat.length:Math.max(1,Number(range)||oldN);
+  const range=options.range??'recent';const rangeN=range==='all'?chat.length:Math.max(1,Number(range)||oldN);
   this.settings.taskRecentMessages=Math.min(chat.length,rangeN);
   const result={range:this.settings.taskRecentMessages,memory:0,events:0,state:0,relationship:null,consolidated:null};
   try{
