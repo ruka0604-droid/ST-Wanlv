@@ -1,3 +1,4 @@
+import { lexicalMatch, hasTopicMatch } from '../recall/scorer.js';
 import { hashString } from '../identity/chat-identity.js';
 const clean=v=>String(v??'').trim();
 const orderValue=e=>Number.isFinite(Number(e?.floorIndexes?.[0]))?Number(e.floorIndexes[0]):Number(e?.occurredAt||e?.createdAt||0);
@@ -12,7 +13,21 @@ export class EventManager{
  async list(chatId,{status='active',limit=500}={}){const all=await this.store.getByIndex('events','chatId',chatId);return all.filter(e=>status===null||e.status===status).sort((a,b)=>orderValue(a)-orderValue(b)).slice(-limit);}
  async history(chatId,sourceId,targetId,{type=null,limit=100}={}){const all=await this.list(chatId);return all.filter(e=>(!type||e.type===type)&&hasPair(e.participants||[],sourceId,targetId)).sort((a,b)=>orderValue(b)-orderValue(a)).slice(0,limit);}
  async pairStats(chatId,sourceId,targetId){const events=await this.history(chatId,sourceId,targetId,{limit:10000});const byType={};for(const e of events)byType[e.type]=(byType[e.type]||0)+1;return{count:events.length,byType,first:events.at(-1)||null,latest:events[0]||null};}
- async recallForQuery(chatId,query,focusParticipants=[],limit=8){const q=clean(query).toLowerCase();const all=await this.list(chatId);const focus=new Set(focusParticipants.map(clean));return all.map(e=>{const ps=e.participants||[];const hit=ps.filter(x=>focus.has(x)).length;const text=`${e.type} ${e.summary} ${ps.join(' ')}`.toLowerCase();let score=hit*.32;if(q&&text.includes(q))score+=.45;for(const token of q.split(/\s+/).filter(x=>x.length>=2).slice(0,12))if(text.includes(token))score+=.05;score+=Math.min(.12,Number(e.importance||0)*.12);return{...e,score};}).filter(e=>e.score>=.18).sort((a,b)=>b.score-a.score||orderValue(b)-orderValue(a)).slice(0,limit);}
+ async recallForQuery(chatId,query,focusParticipants=[],limit=8){
+  // Relevance must come from the event itself; the main character is a participant
+  // in almost every event and must not cause all old events to be injected.
+  const q=clean(query);
+  if(!q)return [];
+  const all=await this.list(chatId);
+  return all.map(e=>{
+    const text=[e.summary,...(e.consequences||[])].join(' ');
+    const lexical=lexicalMatch(q,text);
+    const score=lexical*.85+Math.min(.15,Number(e.importance||0)*.15);
+    return {...e,score,lexical};
+  }).filter(e=>hasTopicMatch(q,[e.summary,...(e.consequences||[])].join(' ')))
+    .sort((a,b)=>b.score-a.score||orderValue(b)-orderValue(a))
+    .slice(0,limit);
+ }
  async invalidateForFloor(floorId,reason='evidence_changed'){const all=await this.store.getAll('events');for(const e of all){if(e.status!=='active'||!(e.floorIds||[]).includes(floorId))continue;e.status='invalid';e.invalidReason=reason;e.updatedAt=Date.now();await this.store.put('events',e);}}
  async timeline(chatId,limit=200){return this.list(chatId,{status:null,limit});}
 }

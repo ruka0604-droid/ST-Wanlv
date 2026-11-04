@@ -6,6 +6,7 @@ function tokens(text){return new Set(String(text||'').toLowerCase().split(/[^\p{
 function similarity(a,b){const A=tokens(a),B=tokens(b);if(!A.size||!B.size)return 0;let hit=0;for(const x of A)if(B.has(x))hit++;return hit/Math.max(1,Math.min(A.size,B.size));}
 function mergeEvidence(items){const map=new Map();for(const m of items)for(const e of (m.evidence||[])){const k=`${e.floorId||''}|${e.hash||''}|${e.revision||''}`;if(!map.has(k))map.set(k,e);}return [...map.values()];}
 function mergeEntities(items){return [...new Set(items.flatMap(m=>m.entityIds||[]))];}
+function mergeKeywords(items){return [...new Set(items.flatMap(m=>m.keywords||[]).map(x=>String(x).trim()).filter(Boolean))].slice(0,16);}
 function compatible(a,b){return a.chatId===b.chatId&&a.type===b.type&&a.visibility===b.visibility;}
 
 export class MemoryConsolidator{
@@ -30,10 +31,10 @@ export class MemoryConsolidator{
     const clusters=await this.findClusters(chatId,options);const results=[];
     for(const cluster of clusters){
       const summary=await this.summarizeCluster(context,cluster);const base=cluster[0];
-      const evidence=mergeEvidence(cluster);const entityIds=mergeEntities(cluster);
+      const evidence=mergeEvidence(cluster);const entityIds=mergeEntities(cluster);const keywords=mergeKeywords(cluster);
       const id=`mem_${hashString(`${chatId}|consolidated|${base.type}|${summary.text}`)}`;
       const existing=await this.store.get('memories',id);
-      const memory={id,chatId,floorId:null,type:base.type,text:summary.text,visibility:base.visibility,confidence:Math.max(0,Math.min(1,summary.confidence||.7)),importance:Math.max(0,Math.min(1,summary.importance||.5)),entityIds,evidence,locked:false,status:'active',source:'consolidated',createdAt:existing?.createdAt||Date.now(),updatedAt:Date.now(),mergedFrom:cluster.map(x=>x.id)};
+      const memory={id,chatId,floorId:null,type:base.type,text:summary.text,visibility:base.visibility,confidence:Math.max(0,Math.min(1,summary.confidence||.7)),importance:Math.max(0,Math.min(1,summary.importance||.5)),entityIds,keywords,evidence,locked:false,status:'active',source:'consolidated',createdAt:existing?.createdAt||Date.now(),updatedAt:Date.now(),mergedFrom:cluster.map(x=>x.id)};
       await this.store.put('memories',memory);
       for(const old of cluster)await this.memoryManager.archiveMemory(old.id,'consolidated');
       await this.store.put('memory_clusters',{id:`cluster_${Date.now()}_${Math.random().toString(36).slice(2)}`,chatId,memoryId:memory.id,sourceMemoryIds:cluster.map(x=>x.id),status:'active',createdAt:Date.now(),updatedAt:Date.now()});

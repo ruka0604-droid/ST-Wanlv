@@ -4,12 +4,12 @@ import { hashString } from '../identity/chat-identity.js';
 export class MemoryManager{
   constructor(store){this.store=store;}
   async captureFloor(chatId,floor){await this.store.put('floors',floor);return floor;}
-  async addMemory({chatId,floorId=null,type,text,visibility=VISIBILITY.SHARED,confidence=.7,importance=.5,entityIds=[],locked=false,evidence=[],source='ai'}){
+  async addMemory({chatId,floorId=null,type,text,visibility=VISIBILITY.SHARED,confidence=.7,importance=.5,entityIds=[],keywords=[],locked=false,evidence=[],source='ai'}){
     if(!Object.values(MEMORY_TYPES).includes(type))throw new Error(`Unknown memory type: ${type}`);
     const clean=String(text||'').trim();if(!clean)return null;const now=Date.now();
     const id=`mem_${hashString(`${chatId}|${floorId||''}|${type}|${clean}`)}`;
     const old=await this.store.get('memories',id);
-    const memory={id,chatId,floorId,type,text:clean,visibility,confidence:clamp(confidence),importance:clamp(importance),entityIds:[...new Set(entityIds)],evidence,locked:old?.locked??locked,status:old?.status||'active',source,createdAt:old?.createdAt||now,updatedAt:now};
+    const memory={id,chatId,floorId,type,text:clean,visibility,confidence:clamp(confidence),importance:clamp(importance),entityIds:[...new Set(entityIds)],keywords:[...new Set([...(old?.keywords||[]),...keywords].map(x=>String(x).trim()).filter(Boolean))].slice(0,16),evidence,locked:old?.locked??locked,status:old?.status||'active',source,createdAt:old?.createdAt||now,updatedAt:now};
     await this.store.put('memories',memory);return memory;
   }
   async listMemories(chatId){const rows=await this.store.getByIndex('memories','chatId',chatId);return rows.filter(x=>x.status==='active');}
