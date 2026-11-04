@@ -1,4 +1,4 @@
-export const VERSION = '0.8.1';
+export const VERSION = '0.8.3';
 export const DB_NAME = 'ST-Wanlv';
 export const DB_VERSION = 8;
 export const MEMORY_TYPES = Object.freeze({ FACT:'FACT', INFERENCE:'INFERENCE', BELIEF:'BELIEF', PRIVATE_COGNITION:'PRIVATE_COGNITION' });
