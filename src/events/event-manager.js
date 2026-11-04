@@ -1,4 +1,4 @@
-import { lexicalMatch } from '../recall/scorer.js';
+import { lexicalMatch, hasTopicMatch } from '../recall/scorer.js';
 import { hashString } from '../identity/chat-identity.js';
 const clean=v=>String(v??'').trim();
 const orderValue=e=>Number.isFinite(Number(e?.floorIndexes?.[0]))?Number(e.floorIndexes[0]):Number(e?.occurredAt||e?.createdAt||0);
@@ -24,7 +24,7 @@ export class EventManager{
     const lexical=lexicalMatch(q,text);
     const score=lexical*.85+Math.min(.15,Number(e.importance||0)*.15);
     return {...e,score,lexical};
-  }).filter(e=>e.lexical>.04)
+  }).filter(e=>hasTopicMatch(q,[e.summary,...(e.consequences||[])].join(' ')))
     .sort((a,b)=>b.score-a.score||orderValue(b)-orderValue(a))
     .slice(0,limit);
  }
