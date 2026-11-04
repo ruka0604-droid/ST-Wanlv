@@ -37,17 +37,18 @@ export class WanlvApp{
   await this.loadSettings();
   setMemoryAIProvider(this);
   this.registerTaskHandlers();
+  this.tasks.pause();
   await this.tasks.recoverStuck();
-  await this.enable();
+  try{await this.enable();}catch(error){await this.disable();throw error;}
  }
  async enable(){
   if(this.active&&this.listeners.length)return this;
   this.context=globalThis.SillyTavern?.getContext?.()||this.context;
   this.active=true;
-  this.tasks.resume();
   this.bindEvents();
   await this.syncIdentity();
   await this.panel.mount();
+  this.tasks.resume();
   this.panel.updateFloating?.();
   return this;
  }
@@ -144,8 +145,8 @@ export class WanlvApp{
   if(typeof context?.setExtensionPrompt!=='function'||!Array.isArray(context?.chat))return;
   const chatId=this.currentIdentity.id;
   if(getChatIdentity(context)?.id!==chatId)return;
-  const lastMessages=context.chat.slice(-4);
-  const query=lastMessages.map(m=>String(m?.mes??m?.content??'').replace(/<[^>]*>/g,' ').slice(0,550)).join('\n').slice(-1400).trim();
+  const lastMessages=context.chat.slice(-2);
+  const query=lastMessages.map(m=>String(m?.mes??m?.content??'').replace(/<[^>]*>/g,' ').slice(0,420)).join('\n').slice(-800).trim();
   if(!query)return;
   const memories=await recall(this.store,chatId,query,{
     limit:this.settings.recallLimit,
