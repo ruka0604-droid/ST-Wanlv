@@ -6,12 +6,12 @@
   "js": "index.js",
   "css": "style.css",
   "author": "阿岚 / 万缕",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "homePage": "https://github.com/ruka0604-droid/ST-Wanlv",
   "auto_update": false,
   "hooks": {
     "activate": "init",
-    "deactivate": "onDisable"
-  },
-  "generate_interceptor": "Wanlv_generateInterceptor"
+    "enable": "onEnable",
+    "disable": "onDisable"
+  }
 }
