@@ -10,7 +10,7 @@ export class WanlvPanel{
   if(!host||document.querySelector('#wanlv_settings'))return;
   const root=document.createElement('div');root.id='wanlv_settings';root.className='wanlv-panel';
   root.innerHTML=`
-   <div class="wanlv-head"><div><b>🧵 万缕</b><span> · V0.8.1 时间轴回看</span></div><button id="wanlv_refresh" class="wanlv-mini">刷新</button></div>
+   <div class="wanlv-head"><div><b>🧵 万缕</b><span> · V0.8.3 时间轴回看</span></div><button id="wanlv_refresh" class="wanlv-mini">刷新</button></div>
    <div class="wanlv-status" id="wanlv_status">正在初始化…</div><div class="wanlv-api" id="wanlv_api"></div>
    <details class="wanlv-section" id="wanlv_api_section"><summary>🔌 API 设置（独立配置 / 跟随酒馆）</summary><div class="wanlv-api-form"><label>API 来源<select id="wanlv_api_mode"><option value="tavern">跟随酒馆 API</option><option value="custom">独立 API</option></select></label><div id="wanlv_custom_fields"><label>API URL<input id="wanlv_api_url" type="url" placeholder="https://example.com/v1" autocomplete="off"></label><label>API Key<input id="wanlv_api_key" type="password" placeholder="输入密钥（仅本次页面会话保留）" autocomplete="off"></label><button id="wanlv_models_fetch">拉取模型</button><label>选择模型<select id="wanlv_api_model"><option value="">请先拉取模型</option></select></label><button id="wanlv_api_test">测试连接</button></div><button id="wanlv_api_save" class="wanlv-primary">确认保存配置</button><div id="wanlv_api_feedback" role="status"></div><div class="wanlv-muted">密钥仅保留在当前页面内存中，刷新后需重新输入；不会写入数据库、仓库或导出文件。独立接口需要允许浏览器跨域访问。</div></div></details><div class="wanlv-dashboard" id="wanlv_dashboard"></div>
    <div class="wanlv-ai-box"><div><b>🧠 AI整理</b><div class="wanlv-muted">一次选择要整理的内容与范围，避免一堆按钮挤在手机屏幕上。</div></div><button id="wanlv_organize" class="wanlv-primary">开始整理</button></div>
@@ -70,7 +70,6 @@ export class WanlvPanel{
    else if(section.querySelector('#wanlv_memory_list'))pageMap.memory.append(section);
   }
   const apiSection=root.querySelector('#wanlv_api_section');if(apiSection){apiSection.open=true;apiSection.querySelector('summary').textContent='🔌 独立 API 设置';}
-  const memoryCount=root.querySelector('#wanlv_memory_count');if(memoryCount&&memorySection?.querySelector('.wanlv-title'))memorySection.querySelector('.wanlv-title').append(memoryCount);
   head.after(intro,nav,pages);
   const show=id=>{for(const page of pages.children)page.hidden=page.dataset.page!==id;for(const button of nav.querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.tab===id));root.dataset.activeTab=id;pages.scrollIntoView({block:'nearest'});};
   nav.addEventListener('click',e=>{const btn=e.target.closest('[data-tab]');if(btn)show(btn.dataset.tab);});
