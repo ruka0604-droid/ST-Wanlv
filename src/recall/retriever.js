@@ -12,7 +12,8 @@ export async function recall(store,chatId,query,{limit=8,minScore=.4,useRecency=
     useEntities?store.getByIndex('entities','chatId',chatId):[]
   ]);
   const entityIds=queryEntities(query,entities);
-  return memories.filter(m=>m.status==='active'&&m.visibility!=='SYSTEM_ONLY').map(m=>{
+  // PLAYER_ONLY memories must not become knowledge available to the character.
+  return memories.filter(m=>m.status==='active'&&!['SYSTEM_ONLY','PLAYER_ONLY'].includes(m.visibility)).map(m=>{
     const ranked=scoreMemory(m,query,{useRecency,entityIds});
     return {...m,score:ranked.score,reasons:ranked.reasons,features:ranked.features};
   }).filter(m=>m.score>=minScore).sort((a,b)=>b.score-a.score||Number(b.importance||0)-Number(a.importance||0)).slice(0,limit);
