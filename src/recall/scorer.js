@@ -33,7 +33,7 @@ export function lexicalMatch(query,text) {
 function overlap(a,b){if(!a.length||!b.length)return 0;const bs=new Set(b);return a.filter(x=>bs.has(x)).length/Math.max(1,a.length);}
 function recency(memory,now=Date.now()){const t=Number(memory.updatedAt||memory.createdAt||0);if(!t)return 0;const days=Math.max(0,(now-t)/86400000);return Math.exp(-days/45);}
 export function scoreMemory(memory,query,opts={}){
-  const lexical=lexicalMatch(query,memory.text);
+  const lexical=lexicalMatch(query,[memory.text,...(memory.keywords||[])].join(' '));
   const importance=Number(memory.importance)||0, confidence=Number(memory.confidence)||0;
   const entityBoost=opts.entityIds?.length&&memory.entityIds?.length?overlap(opts.entityIds,memory.entityIds):0;
   const recent=recency(memory,opts.now);
