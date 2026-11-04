@@ -30,6 +30,14 @@ export function lexicalMatch(query,text) {
   return match/Math.max(1,total);
 }
 
+const SINGLE_OBJECTS = new Set([...'伞戒锁吻刀琴药灯猫狗书信船剑铃']);
+export function hasTopicMatch(query,text){
+  const tokens=tokenizeRecall(query),known=new Set(tokenizeRecall(text));
+  if(tokens.some(t=>!t.startsWith('han1:')&&known.has(t)))return true;
+  // A single distinctive object/event character can also trigger a short mention.
+  return String(query||'').length<=30 && tokens.some(t=>t.startsWith('han1:')&&SINGLE_OBJECTS.has(t.slice(5))&&known.has(t));
+}
+
 function overlap(a,b){if(!a.length||!b.length)return 0;const bs=new Set(b);return a.filter(x=>bs.has(x)).length/Math.max(1,a.length);}
 function recency(memory,now=Date.now()){const t=Number(memory.updatedAt||memory.createdAt||0);if(!t)return 0;const days=Math.max(0,(now-t)/86400000);return Math.exp(-days/45);}
 export function scoreMemory(memory,query,opts={}){
@@ -39,7 +47,7 @@ export function scoreMemory(memory,query,opts={}){
   const recent=recency(memory,opts.now);
   const typeBoost=memory.type==='FACT'?0.08:memory.type==='PRIVATE_COGNITION'?0.035:memory.type==='INFERENCE'?0.02:0;
   // Important or recent but unrelated memories must never pass the relevance gate.
-  const topical=lexical>0||entityBoost>0;
+  const topical=hasTopicMatch(query,[memory.text,...(memory.keywords||[])].join(' '))||entityBoost>0;
   const score=topical?Math.min(1,lexical*.50+importance*.18+confidence*.13+(opts.useRecency===false?0:recent*.09)+entityBoost*.10+typeBoost):0;
   const reasons=[];
   if(lexical>.05)reasons.push(`文本关联 ${Math.round(lexical*100)}%`);
