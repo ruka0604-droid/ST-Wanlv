@@ -6,7 +6,7 @@ export const VISIBILITY = Object.freeze({ PLAYER_ONLY:'PLAYER_ONLY', CHARACTER_O
 export const TASK_STATUS = Object.freeze({ QUEUED:'queued', RUNNING:'running', DONE:'done', FAILED:'failed', CANCELLED:'cancelled' });
 export const DEFAULT_SETTINGS = Object.freeze({
   floatingEnabled:true, apiMode:"tavern", apiUrl:"", apiModel:"", enabled:true, autoCapture:true, autoExtract:false, injectEnabled:true,
-  recallLimit:8, minRecallScore:0.40, maxInjectedChars:6000,
+  recallLimit:8, minRecallScore:0.70, maxInjectedChars:6000,
   autoInvalidateStaleEvidence:true, rememberUserOnly:false, autoStateExtract:false,
   autoRelationshipExtract:false, recallUseRecency:true, recallUseEntities:true,
   taskConcurrency:1, taskRetryLimit:2, taskRecentMessages:12, debugLogs:false, autoConsolidate:false, consolidationThreshold:0.55, maxClusterSize:8
