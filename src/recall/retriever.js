@@ -6,7 +6,7 @@ function queryEntities(query,entities=[]){
   return entities.filter(e=>q.includes(String(e.name||'').toLowerCase()) || (e.aliases||[]).some(a=>q.includes(String(a).toLowerCase()))).map(e=>e.id);
 }
 
-export async function recall(store,chatId,query,{limit=8,minScore=.4,useRecency=true,useEntities=true}={}){
+export async function recall(store,chatId,query,{limit=8,minScore=.7,useRecency=true,useEntities=true}={}){
   const [memories,entities]=await Promise.all([
     store.getByIndex('memories','chatId',chatId),
     useEntities?store.getByIndex('entities','chatId',chatId):[]
