@@ -29,7 +29,7 @@ function sharedEvidence(a,b){
 }
 function occurrenceMarker(text){
   const s=String(text||'');
-  const order=s.match(/第[一二三四五六七八九十百\\d]+次/);
+  const order=s.match(/第[一二三四五六七八九十百0-9]+次/);
   if(order)return order[0];
   if(/初吻|初次|首次|第一次/.test(s))return 'first';
   if(/再次|又一次|再一次|第二次/.test(s))return 'repeat';
