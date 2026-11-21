@@ -51,3 +51,11 @@ test('missing evidence and locked memories cannot be silently merged',async()=>{
   ]);
   assert.equal(groups.length,0);
 });
+
+test('numbered second and third occurrences stay separate',async()=>{
+  const groups=await clusters([
+    memory('a','两人在雨夜第2次接吻','floor-3'),
+    memory('b','两人在雨夜第3次接吻','floor-3')
+  ]);
+  assert.equal(groups.length,0);
+});
