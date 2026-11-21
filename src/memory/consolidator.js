@@ -1,9 +1,49 @@
 import { hashString } from '../identity/chat-identity.js';
 import { MEMORY_TYPES } from '../core/config.js';
 import { callMemoryAI } from '../ai/api-client.js';
+import { tokenizeRecall } from '../recall/scorer.js';
 
-function tokens(text){return new Set(String(text||'').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x=>x.length>1));}
-function similarity(a,b){const A=tokens(a),B=tokens(b);if(!A.size||!B.size)return 0;let hit=0;for(const x of A)if(B.has(x))hit++;return hit/Math.max(1,Math.min(A.size,B.size));}
+// Reuse the Chinese-aware tokenizer already used by retrieval; do not add a second tokenizer.
+function similarity(a,b){
+  const A=new Set(tokenizeRecall(a).filter(t=>!t.startsWith('han1:')));
+  const B=new Set(tokenizeRecall(b).filter(t=>!t.startsWith('han1:')));
+  if(!A.size||!B.size)return 0;
+  let hit=0;
+  for(const x of A)if(B.has(x))hit++;
+  return hit/Math.max(1,Math.min(A.size,B.size));
+}
+// Distinct occurrences may use nearly identical words. A shared active source
+// is the minimum proof required before archiving either original memory.
+function evidenceKeys(memory){
+  const keys=new Set();
+  for(const e of memory.evidence||[]){
+    if(e.floorId)keys.add('id:'+e.floorId);
+    else if(e.floorKey)keys.add('key:'+e.floorKey);
+  }
+  if(memory.floorId)keys.add('id:'+memory.floorId);
+  return keys;
+}
+function sharedEvidence(a,b){
+  const A=evidenceKeys(a),B=evidenceKeys(b);
+  return A.size>0&&[...A].some(k=>B.has(k));
+}
+function occurrenceMarker(text){
+  const s=String(text||'');
+  const order=s.match(/第[一二三四五六七八九十百\\d]+次/);
+  if(order)return order[0];
+  if(/初吻|初次|首次|第一次/.test(s))return 'first';
+  if(/再次|又一次|再一次|第二次/.test(s))return 'repeat';
+  return '';
+}
+function sameOccurrence(a,b){
+  const x=occurrenceMarker(a),y=occurrenceMarker(b);
+  return (!x&&!y)||Boolean(x&&y&&x===y);
+}
+function safeCandidate(a,b,threshold){
+  return compatible(a,b)&&sharedEvidence(a,b)
+    &&sameOccurrence(a.text,b.text)
+    &&similarity(a.text,b.text)>=threshold;
+}
 function mergeEvidence(items){const map=new Map();for(const m of items)for(const e of (m.evidence||[])){const k=`${e.floorId||''}|${e.hash||''}|${e.revision||''}`;if(!map.has(k))map.set(k,e);}return [...map.values()];}
 function mergeEntities(items){return [...new Set(items.flatMap(m=>m.entityIds||[]))];}
 function mergeKeywords(items){return [...new Set(items.flatMap(m=>m.keywords||[]).map(x=>String(x).trim()).filter(Boolean))].slice(0,16);}
@@ -15,7 +55,7 @@ export class MemoryConsolidator{
     const memories=(await this.memoryManager.listMemories(chatId)).filter(m=>!m.locked && m.status==='active');
     const used=new Set(),clusters=[];
     for(const base of memories){if(used.has(base.id))continue;const group=[base];
-      for(const candidate of memories){if(candidate.id===base.id||used.has(candidate.id)||group.length>=maxClusterSize)continue;if(!compatible(base,candidate))continue;if(similarity(base.text,candidate.text)>=threshold)group.push(candidate);}
+      for(const candidate of memories){if(candidate.id===base.id||used.has(candidate.id)||group.length>=maxClusterSize)continue;if(group.every(item=>safeCandidate(item,candidate,threshold)))group.push(candidate);}
       if(group.length>1){group.forEach(m=>used.add(m.id));clusters.push(group);}
     }
     return clusters;
